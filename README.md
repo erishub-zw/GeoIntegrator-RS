@@ -7,8 +7,18 @@ It focuses on interactive visualization of black-hole / wormhole style ray behav
 
 ## Preview
 
-![Egone Preview](res/img.png)
-
+### 1. Dynamic Demonstration
+<center>
+  <img src="res/1.gif" alt="Dynamic Demo" width="800"/>
+</center>
+### 2. Black Hole Simulation
+<center>
+  <img src="res/img.png" alt="Wormhole" width="800"/>
+</center>
+### 3. Wormhole Simulation
+<center>
+  <img src="res/img_1.png" alt="Black Hole" width="800"/>
+</center>
 ---
 
 ## 🚀 Project Status: Work in Progress
