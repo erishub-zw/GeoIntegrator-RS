@@ -14,3 +14,8 @@ pollster = "0.4.0"
 sysinfo = "0.39.1"
 wgpu = "29.0.3"
 winit = "0.30.13"
+
+
+[profile.release]
+panic = "abort"
+lto = true
