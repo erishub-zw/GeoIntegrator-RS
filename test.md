@@ -1,0 +1,8 @@
+核心架构设计为了保持性能，建议将物理计算（测地线追踪）完全移交给 Compute Shader 或 Fragment Shader，而 Rust 负责逻辑控制和 UI 交互。计算策略：Vertex-less Rendering你可以采用“全屏幕 Fragment Shader”方案：Rust 层：负责管理 Uniforms（如质量 $M$、自旋 $a$、视界半径、相机位置等），并根据 egui 的输入每帧更新。GPU 层 (WGSL)：为屏幕上的每个像素发射一条光线。在 Shader 中运行数值积分循环（建议使用 RK4 保证稳定性）。采样背景纹理或计算吸积盘。2. 实施路线图第一阶段：搭建 wgpu 渲染管线环境初始化：配置 wgpu 实例，针对 Mac 选择 Metal 或 Default 后端。egui 集成：使用 egui_wgpu 将 UI 覆盖在渲染画面上。基础 Shader：先写一个最简单的 Shader，能根据相机方向采样 360° 环境贴图（Skybox），确认坐标系映射正确。第二阶段：通用度规 Shader (核心)这是最关键的一步。你需要编写 WGSL 代码来实现通用的物理逻辑。定义 Uniforms：Ruststruct GravityParams {
+mass: f32,
+spin: f32,
+charge: f32,
+is_wormhole: f32, // 0.0 为黑洞, 1.0 为虫洞
+horizon_radius: f32,
+}
+数值积分器：在 Shader 中实现一个循环。坐标系：建议使用各向同性坐标 (Isotropic coordinates) 或 Boyer-Lindquist 坐标。对于通用的“大质量天体”，各向同性坐标在处理光线弯曲时数学形式更对称。步长策略：实现简单的自适应步长。当 $r$ 减小时，缩短步长以防止光线直接“跳过”视界或穿透虫洞喉道。第三阶段：交互与参数映射egui 控制板：质量滑动条：控制引力透镜的强度。自旋/角动量：观察光线如何在旋转天体附近发生“参考系拖拽”（Frame-dragging）。切换模式：用户点击“虫洞”开关，Shader 内部切换 $g_{rr}$ 的计算逻辑。实时反馈：当用户调节滑块时，wgpu 实时重绘，这种即时反馈感是 egui 的强项。3. 技术难点与避坑指南数值稳定性在 GPU 上跑积分最怕无限循环。强制上限：给 Shader 的 while 循环设置 MAX_STEPS（如 256 或 512）。早期退出：一旦光线半径 $r$ 远大于天体（逃逸）或进入视界（吸收），立即 break。虫洞的“转场”处理如果用户定义为虫洞，当光线经过 $r_{min}$ 后，$r$ 应该重新增大，但此时采样应指向第二张背景贴图。技巧：在 Shader 中维护一个 bool side_b。每当跨越喉道，执行 side_b = !side_b。最后根据这个布尔值决定从哪张 texture_2d 中采样。性能优化：Compute Shader vs Fragment Shader如果你的模拟非常复杂（例如需要计算二级散射），建议先用 Compute Shader 计算好每个像素的最终颜色，写入一个 StorageTexture，再由 Fragment Shader 贴到全屏三角形上。对于“单天体不用太精致”的需求，直接在 Fragment Shader 里写逻辑最省事。4. 推荐的参数化方案为了让一个引擎通用，你可以使用这个简化的广义度规公式作为 Shader 核心：$$ds^2 = -(1 - \frac{2M}{r})dt^2 + (1 - \frac{2M}{r})^{-1}dr^2 + (r^2 + b^2)(d\theta^2 + \sin^2\theta d\phi^2)$$当 $b=0$：它是史瓦西黑洞。当 $b > 0$：它变成了一个简化的虫洞模型（Morris-Thorne 类型）。
