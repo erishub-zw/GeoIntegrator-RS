@@ -22,7 +22,7 @@ It focuses on interactive visualization of black-hole / wormhole style ray behav
 ### 3. Wormhole Simulation  
 
 <center>
-  <img src="res/img_1.png" alt="Black Hole" width="800"/>
+  <img src="res/w.gif" alt="Black Hole" width="800"/>
 </center>
 ---
 
