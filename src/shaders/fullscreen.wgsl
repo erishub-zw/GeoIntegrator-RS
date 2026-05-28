@@ -54,7 +54,6 @@ fn ray_state_is_finite(state: RayState) -> bool {
 fn gravity_accel(pos: vec3<f32>, dir: vec3<f32>, mass: f32) -> vec3<f32> {
     let r = max(length(pos), 1.0e-5);
     let inv_r3 = 1.0 / (r * r * r);
-    // Schwarzschild first: use a simple radial bending surrogate.
     let radial = -2.0 * mass * pos * inv_r3;
     return radial - dot(radial, dir) * dir;
 }
@@ -124,7 +123,6 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let escape_radius = gravity.params4.x;
     let adaptive_radius_scale = max(gravity.params4.y, 0.001);
 
-    // Camera-space ray (right-handed, forward points to -Z in camera space).
     let ray_cam = normalize(vec3<f32>(
         ndc.x * aspect * tan_half_fov,
         -ndc.y * tan_half_fov,
@@ -192,14 +190,12 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let sky_uv = world_dir_to_sky_uv(sample_dir);
 
     if (debug_direction_view > 0.5) {
-        // RGB encodes world direction to detect mirroring/flipping.
         let base = 0.5 + 0.5 * ray_world;
         let gravity_debug = vec3<f32>(
             clamp(mass / 50.0, 0.0, 1.0),
             0.5 + 0.5 * clamp(spin, -1.0, 1.0),
             0.5 + 0.5 * clamp(charge / 5.0, -1.0, 1.0),
         );
-        // Add lat-long grid to verify mapping continuity and seam direction.
         let grid_u = abs(fract(sky_uv.x * 24.0) - 0.5);
         let grid_v = abs(fract(sky_uv.y * 12.0) - 0.5);
         let grid = select(0.0, 1.0, min(grid_u, grid_v) < 0.02);
@@ -223,7 +219,6 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
             step_color = vec3<f32>(0.0, 0.0, 0.0);
         }
         if (is_wormhole > 0.5 && side_b) {
-            // Blue tint marks pixels currently sampling side B.
             step_color = mix(step_color, vec3<f32>(0.2, 0.45, 1.0), 0.35);
         }
         return vec4<f32>(step_color, 1.0);
@@ -244,7 +239,6 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let mapped = exposed / (vec3<f32>(1.0) + exposed);
     var corrected = pow(mapped, vec3<f32>(1.0 / max(gamma, 0.0001)));
     if (is_wormhole > 0.5 && side_b) {
-        // Slight tint helps verify that side switching occurs in normal view too.
         corrected = mix(corrected, corrected * vec3<f32>(0.88, 0.95, 1.08), 0.12);
     }
     return vec4<f32>(corrected, 1.0);
