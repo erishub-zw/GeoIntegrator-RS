@@ -67,7 +67,6 @@ impl OrbitalCameraController {
     }
 
     pub fn apply_scroll(&self, camera: &mut OrbitalCamera, scroll_delta: f32) {
-        // Positive scroll moves camera closer to target (UE/Unity style feel).
         camera.zoom(-scroll_delta * self.zoom_sensitivity);
     }
 }
