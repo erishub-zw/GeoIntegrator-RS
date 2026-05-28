@@ -4,7 +4,7 @@ Egone is a real-time gravitational lensing playground built with **Rust + wgpu +
 It focuses on interactive visualization of black-hole / wormhole style ray behavior, with a fast iteration loop for shader experiments and physics-driven rendering controls.
 
 ---  
-Features:
+## Features:
 - GPU geodesic integration
 - RK4 adaptive stepping
 - Kerr-like black hole lensing
